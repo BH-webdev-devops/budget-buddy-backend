@@ -6,12 +6,16 @@ import {User} from "../types/User"
 
 export const registerUser = async (req: Request, res: Response): Promise<Response | any> => {
 
-    const {username, email, password} = req.body
+    const {username, email, password, is_admin} = req.body
+    let is_admin_bool = true
+    if (is_admin === null || is_admin === undefined || is_admin === false) {
+        is_admin_bool = false
+    }
     try {
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password, salt)
 
-        await query("INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id", [username, email, hashedPassword]);
+        await query("INSERT INTO users (username, email, password, is_admin) VALUES ($1, $2, $3, $4) RETURNING id", [username, email, hashedPassword, is_admin_bool]);
         
         return res.status(201).json({message: "User was created successfully!"})
     } catch(err) {
