@@ -73,6 +73,21 @@ export const updateSpending = async (req: Request, res: Response): Promise<Respo
     }
 }
 
+export const retrieveSumOfSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
+    const userId = (req as Request & { user: any }).user
+    try {
+        const result = await query(`SELECT category, SUM(amount) FROM spendings WHERE user_id = $1 GROUP BY category`, [userId.id])
+        const spendings = result.rows
+        return res.status(200).json({ message: 'Sum of spendings by category', spendings })
+
+    }
+    catch (err) {
+        console.log(err)
+        return res.status(500).json({ message: `Internal server error` })
+    }
+}
+
+
 export const deleteSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     const spendingId = req.params.id
