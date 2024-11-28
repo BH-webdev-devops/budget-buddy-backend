@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors'; 
 import { pool } from './database/db';
+import authRouter from './routers/authRouter';
 
 const PORT = process.env.PORT;
 const app = express(); // create express app
@@ -15,6 +16,7 @@ const startServer = async () => {
         const client = await pool.connect();
         console.log(`Connection with the database established 🟢`)
         client.release();
+        app.use('/api', authRouter);
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
