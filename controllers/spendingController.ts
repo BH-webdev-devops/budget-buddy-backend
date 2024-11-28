@@ -11,7 +11,7 @@ export const createSpending = async (req: Request, res: Response): Promise<Respo
             return res.status(404).json({ message: `Spending not created` })
         }
         return res.status(201).json({
-            message: `Spending created successfully`, task: result.rows[0]
+            message: `Spending created successfully`, spending: result.rows[0]
         })
     }
 
