@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors'; 
 import { pool } from './database/db';
 import authRouter from './routers/authRouter';
+import userRouter from './routers/userRouter';
 
 const PORT = process.env.PORT;
 const app = express(); // create express app
@@ -16,7 +17,7 @@ const startServer = async () => {
         const client = await pool.connect();
         console.log(`Connection with the database established 🟢`)
         client.release();
-        app.use('/api', authRouter);
+        app.use('/api', authRouter, userRouter);
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
