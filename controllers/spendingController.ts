@@ -121,6 +121,21 @@ export const retrieveSumOfSpendingsByCategory = async (req: Request, res: Respon
     }
 }
 
+// create a function that retrieves all spendings for a single category selected by the user
+export const retrieveAllSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
+    const userId = (req as Request & { user: any }).user.id
+    const category = req.query.category
+    try {
+        const result = await query(`SELECT * FROM spendings WHERE user_id = $1 AND category = $2`, [userId, category])
+        const spendings = result.rows
+        return res.status(200).json({ message: `All spendings for category ${category}`, spendings })
+
+    }
+    catch (err) {
+        console.log(err)
+        return res.status(500).json({ message: `Internal server error` })
+    }
+}
 
 export const deleteSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
