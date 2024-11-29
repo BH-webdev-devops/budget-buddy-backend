@@ -1,8 +1,34 @@
 import {Request, Response} from 'express'
 import {query} from '../database/db'
+import { createClient } from 'redis';
+
+const redisClient = createClient({
+    socket: {
+        reconnectStrategy: function(retries) {
+            if (retries > 20) {
+                console.log("Too many attempts to reconnect. Redis connection was terminated");
+                return new Error("Too many retries.");
+            } else {
+                return retries * 500;
+            }
+        }
+    }
+});
+
+redisClient.on('error', error => console.error('Redis client error:', error));
+redisClient.on('connect', () => console.log('Redis client connected'));
+
+(async () => {
+    await redisClient.connect();
+})();
+
+const DEFAULT_EXPIRATION = 3600;
 
 export const createSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id
+    console.log(await redisClient.get(userId.toString()));
+    redisClient.del(userId.toString());
+    console.log(await redisClient.get(userId.toString()));
     const { name, amount, date, category } = req.body
     try {
         
@@ -23,10 +49,17 @@ export const createSpending = async (req: Request, res: Response): Promise<Respo
 
 export const getAllSpendings = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
+    const stringifyUserId = userId.toString();
     try {
+        const cachedSpendings = await redisClient.get(stringifyUserId);
+        console.log(cachedSpendings)
+        if (cachedSpendings) {
+            return res.status(200).json({ message: 'All spendings', spendings: JSON.parse(cachedSpendings) });
+        }
         const result = await query(`SELECT * FROM spendings WHERE user_id = $1`, [userId])
         const spendings = result.rows
-
+        redisClient.set(stringifyUserId, JSON.stringify(spendings));
+        redisClient.expire(stringifyUserId, DEFAULT_EXPIRATION);
         return res.status(200).json({ message: 'All spendings', spendings })
 
     }
