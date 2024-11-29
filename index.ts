@@ -15,7 +15,9 @@ app.use(express.urlencoded({extended: true}))
 
 const startServer = async () => {
     try {
+        
         const client = await pool.connect();
+        
         console.log(`Connection with the database established 🟢`)
         client.release();
         app.use('/api', authRouter, userRouter, spendingRouter);
