@@ -18,11 +18,10 @@ const redisClient = createClient({
     }
 });
 
-redisClient.on('error', error => console.error('Redis client error:', error));
-redisClient.on('connect', () => console.log('Redis client connected'));
-
 (async () => {
     await redisClient.connect();
+    redisClient.on('error', error => console.error('Redis client error:', error));
+    redisClient.on('connect', () => console.log('Redis client connected'));
 })();
 
 const DEFAULT_EXPIRATION = 3600;
