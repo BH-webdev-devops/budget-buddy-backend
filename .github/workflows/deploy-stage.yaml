@@ -1,0 +1,74 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v1"
+        with:
+          token_format: "access_token"
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Docker Auth
+        id: docker-auth
+        uses: "docker/login-action@v1"
+        with:
+          username: "oauth2accesstoken"
+          password: "${{ steps.auth.outputs.access_token }}"
+          registry: "gcr.io"
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build \
+            --build-arg DB_HOST=${{ secrets.DB_HOST }} \
+            --build-arg DB_PORT=${{ secrets.DB_PORT }} \
+            --build-arg DB_NAME=${{ secrets.DB_NAME }} \
+            --build-arg DB_USER=${{ secrets.DB_USER }} \
+            --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --build-arg DB_TYPE=${{ secrets.DB_TYPE }} \
+            --build-arg PORT=${{ secrets.PORT }} \
+            --build-arg JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --build-arg REDIS_PORT="${{ secrets.REDIS_PORT }}" \
+            --build-arg REDIS_HOST="${{ secrets.REDIS_HOST }}" \
+            -t gcr.io/${{ secrets.PROJECT_ID }}/budget-buddy-backend:latest .
+          docker push gcr.io/${{ secrets.PROJECT_ID }}/budget-buddy-backend:latest
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          service: budget-buddy-backend
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID}}/budget-buddy-backend
+          region: ${{ secrets.GCP_REGION }}
+          platform: managed
+          allow-authenticated: true
+          timeout: 300s
+
+      - name: Allow unauthenticated access
+        run: |
+          gcloud run services add-iam-policy-binding budget-buddy-backend \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --region=europe-west1 \
+            --platform=managed
