@@ -59,7 +59,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v1
         with:
           service: budget-buddy-backend
-          image: gcr.io/${{ secrets.GCP_PROJECT_ID}}/budget-buddy-backend
+          image: gcr.io/${{ secrets.PROJECT_ID}}/budget-buddy-backend
           region: ${{ secrets.GCP_REGION }}
           platform: managed
           allow-authenticated: true
