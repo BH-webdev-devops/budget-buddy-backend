@@ -13,6 +13,10 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
+app.get('/test', (req, res) => {
+    res.send('Test the route');
+})
+
 const startServer = async () => {
     try {
         
