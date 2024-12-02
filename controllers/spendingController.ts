@@ -128,7 +128,7 @@ export const retrieveAllSpendingsByCategory = async (req: Request, res: Response
 
     try {
         const result = await query(
-            `SELECT name, SUM(amount) as total_amount 
+            `SELECT name, SUM(amount) 
              FROM spendings 
              WHERE user_id = $1 AND category = $2 
              GROUP BY name`,
