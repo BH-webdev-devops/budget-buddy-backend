@@ -233,6 +233,7 @@ export const retrieveSpendingsBetweenDates = async (req: Request, res: Response)
 
 export const deleteSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
+    redisClient.del(userId.toString());
     const spendingId = req.params.id
     try {
         const result = await query(`DELETE FROM spendings WHERE id = $1 AND user_id = $2`, [spendingId, userId])
