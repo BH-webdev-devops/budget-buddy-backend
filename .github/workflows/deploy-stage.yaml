@@ -53,6 +53,8 @@ jobs:
             --build-arg REDIS_PORT="${{ secrets.REDIS_PORT }}" \
             --build-arg REDIS_HOST="${{ secrets.REDIS_HOST }}" \
             --build-arg REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
+            --build-arg SENDER_EMAIL="${{ secrets.SENDER_EMAIL }}" \
+            --build-arg GOOGLE_APP_PASSWORD="${{ secrets.GOOGLE_APP_PASSWORD }}" \
             -t gcr.io/${{ secrets.PROJECT_ID }}/budget-buddy-backend:latest .
           docker push gcr.io/${{ secrets.PROJECT_ID }}/budget-buddy-backend:latest
 

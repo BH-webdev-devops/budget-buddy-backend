@@ -5,6 +5,7 @@ import { pool } from './database/db';
 import authRouter from './routers/authRouter';
 import userRouter from './routers/userRouter';
 import spendingRouter from './routers/spendingRouter';
+import mailRouter from './routers/mailRouter';
 
 const PORT = process.env.PORT;
 const app = express(); // create express app
@@ -24,7 +25,7 @@ const startServer = async () => {
         
         console.log(`Connection with the database established 🟢`)
         client.release();
-        app.use('/api', authRouter, userRouter, spendingRouter);
+        app.use('/api', authRouter, userRouter, spendingRouter, mailRouter);
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
