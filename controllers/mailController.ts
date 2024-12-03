@@ -19,6 +19,8 @@ export const sendMail = async (req: Request, res: Response): Promise<Response | 
     const userId = (req as Request & { user: any }).user.id;
     const info = await query(`SELECT email FROM users WHERE id = $1`, [userId]);
     const email = info.rows[0].email;
+    // get all spendings
+    const spendings = await query(`SELECT * FROM spendings WHERE user_id = $1`, [userId]);
 
     console.log(email);
 
@@ -28,7 +30,16 @@ export const sendMail = async (req: Request, res: Response): Promise<Response | 
         from: process.env.SENDER_EMAIL,
         to: email,
         subject: 'Test email',
-        text: 'Hello, this is a test email from my server'
+        text: 'Hello, this is a test email from my server',
+        //map through the spendings and display them in the email
+        html: spendings.rows.map((spending: any) => {
+            return `
+            <p>Spending name: ${spending.name}</p>
+            <p>Spending amount: ${spending.amount}</p>
+            <p>Spending date: ${spending.date}</p>
+            <p>Spending category: ${spending.category}</p>
+            `;
+        }).join('')
     });
 
     res.send('Email sent successfully');
