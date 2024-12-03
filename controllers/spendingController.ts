@@ -53,6 +53,7 @@ export const getAllSpendings = async (req: Request, res: Response): Promise<Resp
     const userId = (req as Request & { user: any }).user.id;
     const stringifyUserId = userId.toString();
     try {
+        console.log(stringifyUserId)
         const cachedSpendings = await redisClient.get(stringifyUserId);
         console.log(cachedSpendings)
         if (cachedSpendings) {
