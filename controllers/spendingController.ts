@@ -53,6 +53,7 @@ export const getAllSpendings = async (req: Request, res: Response): Promise<Resp
     const userId = (req as Request & { user: any }).user.id;
     const stringifyUserId = userId.toString();
     try {
+        console.log(stringifyUserId)
         const cachedSpendings = await redisClient.get(stringifyUserId);
         console.log(cachedSpendings)
         if (cachedSpendings) {
@@ -63,7 +64,6 @@ export const getAllSpendings = async (req: Request, res: Response): Promise<Resp
         redisClient.set(stringifyUserId, JSON.stringify(spendings));
         redisClient.expire(stringifyUserId, DEFAULT_EXPIRATION);
         return res.status(200).json({ message: 'All spendings', spendings })
-
     }
     catch (err) {
         console.log(err)
