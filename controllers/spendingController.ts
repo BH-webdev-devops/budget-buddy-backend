@@ -109,49 +109,91 @@ export const updateSpending = async (req: Request, res: Response): Promise<Respo
     }
 }
 
+const convertToYYYYMMDD = (dateString: string): string => {
+    const date = new Date(dateString); // Parse the string into a Date object
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    console.log(`${year}-${month}-${day}`);
+    return `${year}-${month}-${day}`; // Format as yyyy-MM-dd
+};
+
+
+// what you see on the pie chart
 export const retrieveSumOfSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
-    const userId = (req as Request & { user: any }).user
+    const userId = (req as Request & { user: any }).user.id;
+    const { startDate, endDate } = req.query; // Get start and end dates from query parameters
+    
     try {
-        const result = await query(`SELECT category, SUM(amount) FROM spendings WHERE user_id = $1 GROUP BY category`, [userId.id])
-        const spendings = result.rows
-        return res.status(200).json({ message: 'Sum of spendings by category', spendings })
+        // Construct the query dynamically based on the presence of startDate and endDate
+        let queryText = `SELECT category, SUM(amount) FROM spendings WHERE user_id = $1`;
+        const queryParams: any[] = [userId];
 
-    }
-    catch (err) {
-        console.log(err)
-        return res.status(500).json({ message: `Internal server error` })
-    }
-}
+        if (startDate) {
+            queryText += ` AND date >= $2`;
+            queryParams.push( convertToYYYYMMDD(startDate as string));
+        }
 
-// create a function that retrieves all spendings for a single category selected by the user
+        if (endDate) {
+            queryText += ` AND date <= $3`;
+            queryParams.push( convertToYYYYMMDD(endDate as string));
+        }
+
+        queryText += ` GROUP BY category`;
+        console.log("QUERY TWXT " , queryText);
+        const result = await query(queryText, queryParams);
+        const spendings = result.rows;
+
+        return res.status(200).json({ message: 'Sum of spendings by category', spendings });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: `Internal server error` });
+    }
+
+};
+
+// This function retrieves all spendings by category grouped by name for a specific user. (what you see when you click a category on the pie chart)
 export const retrieveAllSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
-    const userId = (req as Request & { user: any }).user.id
-    const category = req.query.category
-    try {
-        const result = await query(`SELECT name, SUM(amount) FROM spendings WHERE user_id = $1 AND category = $2 GROUP BY name`, [userId, category])
-        const spendings = result.rows
-        return res.status(200).json({ message: `All spendings for category ${category}`, spendings })
+    const userId = (req as Request & { user: any }).user.id;
+    const category = req.query.category;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
 
+    try {
+        // Start constructing the base query
+        let queryText = `SELECT name, SUM(amount) FROM spendings WHERE user_id = $1 AND category = $2`;
+        const queryParams: any[] = [userId, category];
+        
+        // Add optional date filters
+        if (startDate) {
+            queryText += ` AND date >= $3`;
+            queryParams.push(convertToYYYYMMDD(startDate as string));
+        }
+        if (endDate) {
+            queryText += ` AND date <= $4`;
+            queryParams.push(convertToYYYYMMDD(endDate as string));
+        }
+
+        // Add GROUP BY clause
+        queryText += ` GROUP BY name`;
+
+        // Execute the query
+        const result = await query(queryText, queryParams);
+        const spendings = result.rows;
+
+        return res.status(200).json({ message: `All spendings for category ${category}`, spendings });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: `Internal server error` });
     }
-    catch (err) {
-        console.log(err)
-        return res.status(500).json({ message: `Internal server error` })
-    }
-}
+};
+
 
 // get all spendings between two dates
 export const retrieveSpendingsBetweenDates = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     const { startDate, endDate } = req.query;
-    
-    const convertToYYYYMMDD = (dateString: string): string => {
-        const date = new Date(dateString); // Parse the string into a Date object
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-        const day = String(date.getDate()).padStart(2, '0');
-        console.log(`${year}-${month}-${day}`);
-        return `${year}-${month}-${day}`; // Format as yyyy-MM-dd
-    }
+    console.log("START DATE", startDate);
 
     try {
         const result = await query(
@@ -175,6 +217,7 @@ export const retrieveSpendingsBetweenDates = async (req: Request, res: Response)
 
 export const deleteSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
+    redisClient.del(userId.toString());
     const spendingId = req.params.id
     try {
         const result = await query(`DELETE FROM spendings WHERE id = $1 AND user_id = $2`, [spendingId, userId])
