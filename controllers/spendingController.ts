@@ -54,17 +54,16 @@ export const getAllSpendings = async (req: Request, res: Response): Promise<Resp
     const stringifyUserId = userId.toString();
     try {
         console.log(stringifyUserId)
-        // const cachedSpendings = await redisClient.get(stringifyUserId);
-        // console.log(cachedSpendings)
-        // if (cachedSpendings) {
-        //     return res.status(200).json({ message: 'All spendings', spendings: JSON.parse(cachedSpendings) });
-        // }
+        const cachedSpendings = await redisClient.get(stringifyUserId);
+        console.log(cachedSpendings)
+        if (cachedSpendings) {
+            return res.status(200).json({ message: 'All spendings', spendings: JSON.parse(cachedSpendings) });
+        }
         const result = await query(`SELECT * FROM spendings WHERE user_id = $1`, [userId])
         const spendings = result.rows
-        //redisClient.set(stringifyUserId, JSON.stringify(spendings));
-        //redisClient.expire(stringifyUserId, DEFAULT_EXPIRATION);
+        redisClient.set(stringifyUserId, JSON.stringify(spendings));
+        redisClient.expire(stringifyUserId, DEFAULT_EXPIRATION);
         return res.status(200).json({ message: 'All spendings', spendings })
-
     }
     catch (err) {
         console.log(err)
