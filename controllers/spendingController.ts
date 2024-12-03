@@ -153,22 +153,6 @@ export const retrieveSumOfSpendingsByCategory = async (req: Request, res: Respon
 };
 
 // This function retrieves all spendings by category grouped by name for a specific user. (what you see when you click a category on the pie chart)
-// export const retrieveAllSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
-//     const userId = (req as Request & { user: any }).user.id
-//     const category = req.query.category
-//     try {
-//         const result = await query(`SELECT name, SUM(amount) FROM spendings WHERE user_id = $1 AND category = $2 GROUP BY name`, [userId, category])
-//         const spendings = result.rows
-//         return res.status(200).json({ message: `All spendings for category ${category}`, spendings })
-
-//     }
-//     catch (err) {
-//         console.log(err)
-//         return res.status(500).json({ message: `Internal server error` })
-//     }
-// }
-
-// This function retrieves all spendings by category grouped by name for a specific user. (what you see when you click a category on the pie chart)
 export const retrieveAllSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     const category = req.query.category;
