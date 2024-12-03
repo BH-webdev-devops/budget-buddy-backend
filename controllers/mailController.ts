@@ -30,16 +30,21 @@ export const sendMail = async (req: Request, res: Response): Promise<Response | 
         from: process.env.SENDER_EMAIL,
         to: email,
         subject: 'Test email',
-        text: 'Hello, this is a test email from my server',
-        //map through the spendings and display them in the email
-        html: spendings.rows.map((spending: any) => {
-            return `
-            <p>Spending name: ${spending.name}</p>
-            <p>Spending amount: ${spending.amount}</p>
-            <p>Spending date: ${spending.date}</p>
-            <p>Spending category: ${spending.category}</p>
-            `;
-        }).join('')
+        text: `Hello ${email}, here are your spendings:`,
+        // Send the spendings as a folder
+        attachments: spendings.rows.map((spending: any) => {
+            return {
+                filename: `${spending.date}`,
+                content: Buffer.from(`
+                Spending name: ${spending.name}
+                Spending amount: ${spending.amount}
+                Spending date: ${spending.date}
+                Spending category: ${spending.category}
+                `),
+                contentType: 'text/plain',
+                contentDisposition: 'attachment'
+            };
+        })
     });
 
     res.send('Email sent successfully');
