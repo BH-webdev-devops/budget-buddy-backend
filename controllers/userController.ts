@@ -42,3 +42,30 @@ export const getUsers = async (req: Request, res: Response): Promise<Response | 
         return res.status(500).json({ message: `Internal server error` })
     }
 }
+
+export const getIdByEmail = async (req: Request, res: Response): Promise<Response | any> => {
+    const { email } = req.body;
+  
+    // Validate the input
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+  
+    try {
+      // Query the database to find the user by email
+      const result = await query(`SELECT id FROM users WHERE email = $1`, [email]);
+      const user = result.rows[0]; // Assume rows[0] contains the user if found
+  
+      // If no user is found, return 404
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+  
+      // Return the user ID
+      return res.status(200).json({ user_id: user.id });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Internal server error." });
+    }
+  };
+
