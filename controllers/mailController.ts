@@ -26,25 +26,25 @@ export const sendMail = async (req: Request, res: Response): Promise<Response | 
 
    
     // Send the email
+    // Create a single CSV file with all the spendings
+    let csvContent = `Spending name,Spending amount,Spending date,Spending category\n`;
+    spendings.rows.forEach((spending: any) => {
+        csvContent += `${spending.name},${spending.amount},${spending.date},${spending.category}\n`;
+    });
+
     await transporter.sendMail({
         from: process.env.SENDER_EMAIL,
         to: email,
         subject: 'Test email',
         text: `Hello ${email}, here are your spendings:`,
-        // Send the spendings as a folder
-        attachments: spendings.rows.map((spending: any) => {
-            return {
-                filename: `${spending.date}`,
-                content: Buffer.from(`
-                Spending name: ${spending.name}
-                Spending amount: ${spending.amount}
-                Spending date: ${spending.date}
-                Spending category: ${spending.category}
-                `),
-                contentType: 'text/plain',
+        attachments: [
+            {
+                filename: 'spendings.csv',
+                content: Buffer.from(csvContent),
+                contentType: 'text/csv',
                 contentDisposition: 'attachment'
-            };
-        })
+            }
+        ]
     });
 
     res.send('Email sent successfully');
