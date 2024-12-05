@@ -28,13 +28,13 @@ const DEFAULT_EXPIRATION = 3600;
 
 export const createSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id
-    console.log(await redisClient.get(userId.toString()));
+    
     redisClient.del(userId.toString());
-    console.log(await redisClient.get(userId.toString()));
-    const { name, amount, date, category } = req.body
+    
+    const { name, amount, date, category, split_user_id } = req.body
     try {
         
-        const result = await query(`INSERT INTO spendings (name, amount, date, category, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *`, [name, amount, date, category, userId])
+        const result = await query(`INSERT INTO spendings (name, amount, date, category, user_id, split_user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`, [name, amount, date, category, userId, split_user_id])
         if (!result) {
             return res.status(404).json({ message: `Spending not created` })
         }
@@ -48,6 +48,51 @@ export const createSpending = async (req: Request, res: Response): Promise<Respo
         return res.status(500).json({ message: `Internal server error`, err })
     }
 }
+
+// create spending for a the user thta you split the spending with
+export const createSplitSpending = async (req: Request, res: Response): Promise<Response | any> => {
+    const current_id = (req as Request & { user: any }).user.id; // Current user's ID
+    
+    
+
+    const { name, amount, date, category, user_id } = req.body;
+    redisClient.del(user_id.toString());
+    redisClient.del(current_id.toString());
+
+    console.log("split_user_id", current_id);
+    console.log("user_id", user_id)
+    console.log("name, amount, date, category", name,  amount, date, category);
+  
+    // Validate input
+    if (!user_id) {
+      return res.status(400).json({ message: "user_id is required." });
+    }
+    if (!name || !amount || !date || !category) {
+      return res.status(400).json({ message: "All fields (name, amount, date, category) are required." });
+    }
+  
+    try {
+      const result = await query(
+        `INSERT INTO spendings (name, amount, date, category, user_id, split_user_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING *`,
+        [name, amount, date, category, user_id, current_id] 
+      );
+      console.log("result", result);
+      if (!result || result.rows.length === 0) {
+        return res.status(400).json({ message: "Failed to create split spending." });
+      }
+  
+      return res.status(201).json({
+        message: "Split spending created successfully.",
+        spending: result.rows[0],
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Internal server error.", err });
+    }
+  };
+
 
 export const getAllSpendings = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
@@ -71,6 +116,49 @@ export const getAllSpendings = async (req: Request, res: Response): Promise<Resp
     }
 }
 
+// export const getAllSpendings = async (req: Request, res: Response): Promise<Response | any> => {
+//     const userId = (req as Request & { user: any }).user.id;
+//     const stringifyUserId = userId.toString();
+//     const { startDate, endDate } = req.query; // Get optional startDate and endDate from query parameters
+
+//     try {
+//         // Check if data exists in the cache
+//         const cacheKey = `${stringifyUserId}-${startDate || "null"}-${endDate || "null"}`;
+//         const cachedSpendings = await redisClient.get(cacheKey);
+
+//         if (cachedSpendings) {
+//             return res.status(200).json({ message: 'All spendings', spendings: JSON.parse(cachedSpendings) });
+//         }
+
+//         // Build the query dynamically
+//         let queryText = `SELECT * FROM spendings WHERE user_id = $1`;
+//         const queryParams: any[] = [userId];
+
+//         if (startDate) {
+//             queryText += ` AND date >= $2`;
+//             queryParams.push(convertToYYYYMMDD(startDate as string));
+//         }
+
+//         if (endDate) {
+//             queryText += ` AND date <= $3`;
+//             queryParams.push(convertToYYYYMMDD(endDate as string));
+//         }
+
+//         const result = await query(queryText, queryParams);
+//         const spendings = result.rows;
+
+//         // Cache the result
+//         redisClient.set(cacheKey, JSON.stringify(spendings));
+//         redisClient.expire(cacheKey, DEFAULT_EXPIRATION);
+
+//         return res.status(200).json({ message: 'All spendings', spendings });
+//     } catch (err) {
+//         console.log(err);
+//         return res.status(500).json({ message: `Internal server error` });
+//     }
+// };
+
+
 export const getSpendingById = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     const spendingId = req.params.id
@@ -92,22 +180,44 @@ export const getSpendingById = async (req: Request, res: Response): Promise<Resp
 export const updateSpending = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     redisClient.del(userId.toString());
-    const spendingId = req.params.id
-    const { name, amount, date, category } = req.body
+    const spendingId = req.params.id;
+    const { name, amount, date, category, split_user_id } = req.body;
+  
     try {
-        const result = await query(`UPDATE spendings SET name = $1, amount = $2, date = $3, category = $4 WHERE id = $5 AND user_id = $6 RETURNING *`, [name, amount, date, category, spendingId, userId])
-        const spending = result.rows[0]
-        if (!spending) {
-            return res.status(404).json({ message: `Spending not found` })
-        }
-        return res.status(200).json({ message: 'Spending updated', spending })
-
+      const queryText = `
+        UPDATE spendings
+        SET
+          name = COALESCE($1, name),
+          amount = COALESCE($2, amount),
+          date = COALESCE($3, date),
+          category = COALESCE($4, category),
+          split_user_id = COALESCE($5, split_user_id)
+        WHERE id = $6 AND user_id = $7
+        RETURNING *`;
+  
+      const result = await query(queryText, [
+        name ?? null,
+        amount ?? null,
+        date ?? null,
+        category ?? null,
+        split_user_id ?? null,
+        spendingId,
+        userId,
+      ]);
+  
+      const spending = result.rows[0];
+  
+      if (!spending) {
+        return res.status(404).json({ message: `Spending not found` });
+      }
+  
+      return res.status(200).json({ message: "Spending updated", spending });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: `Internal server error` });
     }
-    catch (err) {
-        console.log(err)
-        return res.status(500).json({ message: `Internal server error` })
-    }
-}
+  };
+  
 
 const convertToYYYYMMDD = (dateString: string): string => {
     const date = new Date(dateString); // Parse the string into a Date object
@@ -119,7 +229,7 @@ const convertToYYYYMMDD = (dateString: string): string => {
 };
 
 
-// what you see on the pie chart
+// what you see on the pie chart. Has an optional date filter
 export const retrieveSumOfSpendingsByCategory = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     const { startDate, endDate } = req.query; // Get start and end dates from query parameters
@@ -193,7 +303,6 @@ export const retrieveAllSpendingsByCategory = async (req: Request, res: Response
 export const retrieveSpendingsBetweenDates = async (req: Request, res: Response): Promise<Response | any> => {
     const userId = (req as Request & { user: any }).user.id;
     const { startDate, endDate } = req.query;
-    console.log("START DATE", startDate);
 
     try {
         const result = await query(
