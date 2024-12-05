@@ -48,3 +48,71 @@ Ensure you have the following installed on your system:
    git clone https://github.com/your-username/budget-buddy-backend.git
    cd budget-buddy-backend
    ```
+2. Install dependencies
+    ```bash
+    npm install --legacy-peer-deps
+
+    ```
+
+3. Start the Redis server
+    ```bash
+    redis-server
+    ```
+
+4. Run the backend server in development mode
+    ```bash
+    npm run dev
+    ```
+5. Access the application at:
+    ```ardunio
+    http://localhost:3000/
+    ```
+
+## Deployment
+
+The backend is deployed and accessible at:
+[https://budget-buddy-backend-630243095989.europe-west1.run.app](https://budget-buddy-backend-630243095989.europe-west1.run.app)
+
+---
+
+## Environment Variables
+
+Set the following environment variables in a `.env` file:
+
+```plaintext
+DB_HOST=
+DB_NAME=
+DB_PASSWORD=
+DB_PORT=
+DB_TYPE=
+DB_USER=
+GCP_REGION=
+GCP_SA_KEY=
+GOOGLE_APP_PASSWORD=
+JWT_SECRET=
+PROJECT_ID=
+REDIS_HOST=
+REDIS_PASSWORD=
+REDIS_PORT=
+SENDER_EMAIL=
+```
+
+## Contribution Guidelines
+
+1. Fork the repository and create a new branch for your feature or bug fix.
+2. Ensure your code is clean and adheres to the project's coding standards.
+3. Submit a pull request with a detailed explanation of your changes.
+
+---
+
+## License
+
+This project is licensed under the **ISC License**.
+
+---
+
+## Support
+
+If you encounter any issues or have questions, feel free to [open an issue](https://github.com/your-username/budget-buddy-backend/issues) or contact the project maintainers.
+
+
