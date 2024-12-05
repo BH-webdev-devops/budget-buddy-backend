@@ -45,7 +45,7 @@ Ensure you have the following installed on your system:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/budget-buddy-backend.git
+   git clone https://github.com/BH-webdev-devops/budget-buddy-backend.git
    cd budget-buddy-backend
    ```
 2. Install dependencies
@@ -59,9 +59,9 @@ Ensure you have the following installed on your system:
     redis-server
     ```
 
-4. Run the backend server in development mode
+4. Run the backend server
     ```bash
-    npm run dev
+    npm start
     ```
 5. Access the application at:
     ```ardunio
@@ -113,6 +113,6 @@ This project is licensed under the **ISC License**.
 
 ## Support
 
-If you encounter any issues or have questions, feel free to [open an issue](https://github.com/your-username/budget-buddy-backend/issues) or contact the project maintainers.
+If you encounter any issues or have questions, feel free to [open an issue](https://github.com/BH-webdev-devops/budget-buddy-backend/issues) or contact the project maintainers.
 
 
